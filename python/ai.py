@@ -7,6 +7,7 @@ class CombatAI:
   self.previous_health=None
   self.retreat_ticks=0
   self.jump_attack_ticks=0
+  self.eating=False
  def load(self):
   try:
    with open(self.data_file,encoding="utf-8") as f:return json.load(f)
@@ -18,6 +19,14 @@ class CombatAI:
    health=float(health)
    if self.previous_health is not None and health<self.previous_health-0.01:self.retreat_ticks=max(self.retreat_ticks,24)
    self.previous_health=health
+  max_health=float(p.get("maxHealth",20.0));food=float(p.get("foodLevel",20.0));needs_food=health is not None and (health<max_health-0.01 or food<20.0)
+  if needs_food and bool(p.get("hasFood",False)):
+   self.eating=True
+   if mobs:
+    target=min(mobs,key=lambda m:float(m.get("distance",999)));x=float(target.get("x",0));z=float(target.get("z",0));d=math.hypot(x,z)
+    if d<19.0:return self.control_for_move(self.best_escape(mobs,True),True,False,float(p.get("yaw",0)),float(p.get("pitch",0)),p.get("onGround",False))
+   return self.control_for_move((0,0),False,False,float(p.get("yaw",0)),float(p.get("pitch",0)),False,None,True)
+  self.eating=False
   if not mobs:return self.stop(p)
   target=min(mobs,key=lambda m:float(m.get("distance",999)))
   x=float(target.get("x",0));y=float(target.get("y",0));z=float(target.get("z",0));horizontal=math.hypot(x,z)
@@ -75,12 +84,12 @@ class CombatAI:
    score+=min_d*.4
    if score>best_score:best_score=score;best=(dx,dz)
   return best
- def control_for_move(self,move,sprint,attack,yaw,pitch,on_ground,target_id=None,use=False):
+ def control_for_move(self,move,sprint,attack,yaw,pitch,on_ground,target_id=None,use=False,eat=False):
   dx,dz=move;l=math.hypot(dx,dz)
   if l>.001:dx/=l;dz/=l
   r=math.radians(yaw);forward=dz*math.cos(r)-dx*math.sin(r);strafe=dx*math.cos(r)+dz*math.sin(r)
-  return {"forward":max(-1,min(1,forward)),"strafe":max(-1,min(1,strafe)),"jump":bool(on_ground and sprint),"sprint":sprint,"attack":attack,"use":use,"yaw":yaw,"pitch":pitch,"targetId":target_id}
- def stop(self,p):return {"forward":0,"strafe":0,"jump":False,"sprint":False,"attack":False,"use":False,"yaw":p.get("yaw",0),"pitch":p.get("pitch",0)}
+  return {"forward":max(-1,min(1,forward)),"strafe":max(-1,min(1,strafe)),"jump":bool(on_ground and sprint),"sprint":sprint,"attack":attack,"use":use,"yaw":yaw,"pitch":pitch,"targetId":target_id,"eat":eat}
+ def stop(self,p):return {"forward":0,"strafe":0,"jump":False,"sprint":False,"attack":False,"use":False,"eat":False,"yaw":p.get("yaw",0),"pitch":p.get("pitch",0),"targetId":None}
  def strafe(self,x,z):
   if abs(x)<.2:return 0
   return -.55 if x>0 else .55
