@@ -9,12 +9,6 @@ java {
         languageVersion = JavaLanguageVersion.of(21)
     }
 }
-sourceSets {
-    main {
-        java.srcDir('src/main/java')
-        resources.srcDir('src/main/resources')
-    }
-}
 neoForge {
     version = '21.1.250'
     runs {
