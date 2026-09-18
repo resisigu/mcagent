@@ -3,7 +3,7 @@ loaderVersion="[4,)"
 license="MIT"
 [[mods]]
 modId="mineagent"
-version="$"+"{file.jarVersion}"
+version="${file.jarVersion}"
 displayName="MineAgent Athletics"
 authors="MineAgent"
 description='''General-purpose Minecraft parkour/athletics AI bridge.'''
