@@ -1,0 +1,21 @@
+modLoader="javafml"
+loaderVersion="[4,)"
+license="MIT"
+[[mods]]
+modId="mineagent"
+version="$"+"{file.jarVersion}"
+displayName="MineAgent Athletics"
+authors="MineAgent"
+description='''General-purpose Minecraft parkour/athletics AI bridge.'''
+[[dependencies.mineagent]]
+modId="neoforge"
+type="required"
+versionRange="[21.1.250,)"
+ordering="NONE"
+side="BOTH"
+[[dependencies.mineagent]]
+modId="minecraft"
+type="required"
+versionRange="[1.21.1]"
+ordering="NONE"
+side="BOTH"
