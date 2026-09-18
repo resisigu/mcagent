@@ -1,0 +1,13 @@
+plugins {
+    id 'net.neoforged.moddev' version '1.0.24'
+}
+group = 'org.mineagent'
+version = '0.4.0'
+base { archivesName = 'mineagent-athletics' }
+java { toolchain { languageVersion = JavaLanguageVersion.of(21) } }
+neoForge {
+    version = '21.1.250'
+    runs { client { client() } }
+    mods { mineagent { sourceSet sourceSets.main } }
+}
+repositories { mavenCentral() }
