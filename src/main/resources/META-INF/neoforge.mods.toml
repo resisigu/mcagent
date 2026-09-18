@@ -5,8 +5,10 @@ license="MIT"
 modId="mineagent"
 version="${file.jarVersion}"
 displayName="MineAgent Athletics"
-authors="MineAgent"
-description='''General-purpose Minecraft parkour/athletics AI bridge.'''
+authors="vister000"
+displayURL="https://vis0.top"
+logoFile=""
+description='''Minecraft向けの汎用パルクール・アスレチックAI。Pythonとのローカルブリッジを使用して動作する非公式Minecraft Modです。'''
 [[dependencies.mineagent]]
 modId="neoforge"
 type="required"
