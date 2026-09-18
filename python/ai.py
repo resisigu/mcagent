@@ -38,22 +38,22 @@ class CombatAI:
   multi=nearby_count>=2
   if multi:
    move=self.best_escape(mobs,False);attack=aim_ok and 2.35<=horizontal<=3.15 and self.attack_ready(p)
-   return self.control_for_move(move,False,attack,yaw,pitch,p.get("onGround",False))
+   return self.control_for_move(move,False,attack,yaw,pitch,p.get("onGround",False),target.get("id"))
   if horizontal<2.35:
    move=(0.0,self.strafe(x,z))
    if self.enemy_threatens(target) and horizontal<1.55:
     return self.control_for_move(self.best_escape(mobs,True),False,False,yaw,pitch,p.get("onGround",False))
-   return self.control_for_move(move,False,aim_ok and self.attack_ready(p),yaw,pitch,p.get("onGround",False))
+   return self.control_for_move(move,False,aim_ok and self.attack_ready(p),yaw,pitch,p.get("onGround",False),target.get("id"))
   if horizontal<=ideal+0.25 and aim_ok:
    if bool(p.get("onGround",False)) and self.jump_attack_ticks<=0:
     self.jump_attack_ticks=10;return self.control_for_move((0.0,self.strafe(x,z)),False,False,yaw,pitch,True)
    if self.jump_attack_ticks>0:
     self.jump_attack_ticks-=1
     if float(p.get("fallDistance",0))>0.02:
-     self.jump_attack_ticks=0;return self.control_for_move((0.0,self.strafe(x,z)),False,self.attack_ready(p),yaw,pitch,False)
+     self.jump_attack_ticks=0;return self.control_for_move((0.0,self.strafe(x,z)),False,self.attack_ready(p),yaw,pitch,False,target.get("id"))
     return self.control_for_move((0.0,self.strafe(x,z)),False,False,yaw,pitch,False)
   if horizontal>ideal+0.3:return self.control_for_move((1.0,self.strafe(x,z)),True,False,yaw,pitch,False)
-  return self.control_for_move((0.0,self.strafe(x,z)),False,self.attack_ready(p) and aim_ok,yaw,pitch,p.get("onGround",False))
+  return self.control_for_move((0.0,self.strafe(x,z)),False,self.attack_ready(p) and aim_ok,yaw,pitch,p.get("onGround",False),target.get("id"))
  def attack_ready(self,p):return float(p.get("attackStrength",1.0))>=0.92
  def enemy_threatens(self,m):
   d=float(m.get("distance",999));vx=float(m.get("vx",0));vz=float(m.get("vz",0));x=float(m.get("x",0));z=float(m.get("z",0));speed=math.hypot(vx,vz);closing=x*vx+z*vz
@@ -75,11 +75,11 @@ class CombatAI:
    score+=min_d*.4
    if score>best_score:best_score=score;best=(dx,dz)
   return best
- def control_for_move(self,move,sprint,attack,yaw,pitch,on_ground,use=False):
+ def control_for_move(self,move,sprint,attack,yaw,pitch,on_ground,target_id=None,use=False):
   dx,dz=move;l=math.hypot(dx,dz)
   if l>.001:dx/=l;dz/=l
   r=math.radians(yaw);forward=dz*math.cos(r)-dx*math.sin(r);strafe=dx*math.cos(r)+dz*math.sin(r)
-  return {"forward":max(-1,min(1,forward)),"strafe":max(-1,min(1,strafe)),"jump":bool(on_ground and sprint),"sprint":sprint,"attack":attack,"use":use,"yaw":yaw,"pitch":pitch}
+  return {"forward":max(-1,min(1,forward)),"strafe":max(-1,min(1,strafe)),"jump":bool(on_ground and sprint),"sprint":sprint,"attack":attack,"use":use,"yaw":yaw,"pitch":pitch,"targetId":target_id}
  def stop(self,p):return {"forward":0,"strafe":0,"jump":False,"sprint":False,"attack":False,"use":False,"yaw":p.get("yaw",0),"pitch":p.get("pitch",0)}
  def strafe(self,x,z):
   if abs(x)<.2:return 0
