@@ -25,7 +25,7 @@ class CombatAI:
    if mobs:
     target=min(mobs,key=lambda m:float(m.get("distance",999)));x=float(target.get("x",0));z=float(target.get("z",0));d=math.hypot(x,z)
     if d<19.0:return self.control_for_move(self.best_escape(mobs,True),True,False,float(p.get("yaw",0)),float(p.get("pitch",0)),p.get("onGround",False))
-   return self.control_for_move((0,0),False,False,float(p.get("yaw",0)),float(p.get("pitch",0)),False,None,True)
+   return self.control_for_move((0,0),False,False,float(p.get("yaw",0)),float(p.get("pitch",0)),False,None,eat=True)
   self.eating=False
   if not mobs:return self.stop(p)
   target=min(mobs,key=lambda m:float(m.get("distance",999)))
