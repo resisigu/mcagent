@@ -3,12 +3,15 @@ package org.mineagent;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.Monster;
@@ -18,6 +21,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 
 import java.io.*;
 import java.net.InetSocketAddress;
@@ -33,6 +37,9 @@ public final class MineAgentClient {
     private static int attackCooldown = 0;
     private static volatile HttpServer server;
     private static Path datasetFile;
+    
+    // 探索範囲（デフォルト: 32m）
+    private static double searchDistance = 32.0;
 
     private MineAgentClient(){}
 
@@ -53,6 +60,26 @@ public final class MineAgentClient {
         } catch(IOException e) {
             server = null;
         }
+    }
+
+    // クライアント側コマンドの登録 (/distance <数値>)
+    @SubscribeEvent
+    public static void onRegisterClientCommands(RegisterClientCommandsEvent event) {
+        event.getDispatcher().register(
+            Commands.literal("distance")
+                .then(Commands.argument("n", DoubleArgumentType.doubleArg(1.0, 256.0))
+                    .executes(context -> {
+                        double dist = DoubleArgumentType.getDouble(context, "n");
+                        searchDistance = dist;
+                        context.getSource().sendFeedback(() -> Component.literal("§a[MineAgent] 探索範囲を " + dist + "m に変更しました。"));
+                        return 1;
+                    })
+                )
+                .executes(context -> {
+                    context.getSource().sendFeedback(() -> Component.literal("§e[MineAgent] 現在の探索範囲: " + searchDistance + "m"));
+                    return 1;
+                })
+        );
     }
 
     @SubscribeEvent 
@@ -78,17 +105,18 @@ public final class MineAgentClient {
         mc.options.keySprint.setDown(c.sprint);
         mc.options.keyAttack.setDown(false);
 
-        // スロット切り替え（hotbarSlotが指定されていれば適用）
+        // スロット切り替え
         if (c.hotbarSlot != null && c.hotbarSlot >= 1 && c.hotbarSlot <= 9) {
-            p.getInventory().selected = c.hotbarSlot - 1; // Minecraftのインベントリインデックスは0〜8
+            p.getInventory().selected = c.hotbarSlot - 1;
         }
 
         if(c.eat()){
             selectFood(p);
         }
 
-        if(c.attack && attackCooldown <= 0 && c.targetId() != null){
-            Entity target = mc.level().getEntity(c.targetId());
+        // 攻撃処理（mc.level 参照へ修正）
+        if(c.attack && attackCooldown <= 0 && c.targetId() != null && mc.level != null){
+            Entity target = mc.level.getEntity(c.targetId());
             if(target instanceof LivingEntity le && le.isAlive() && mc.gameMode != null && p.distanceToSqr(le) < 16.0){
                 mc.gameMode.attack(p, le);
                 p.swing(net.minecraft.world.InteractionHand.MAIN_HAND);
@@ -188,9 +216,9 @@ public final class MineAgentClient {
         o.addProperty("heldItem", BuiltInRegistries.ITEM.getKey(p.getMainHandItem().getItem()).toString());
         o.addProperty("attackStrength", p.getAttackStrengthScale(0.0F));
         
-        // ★修正点：探知範囲を 12m → 32m、20m → 32m にそれぞれ拡大
-        o.add("mobs", nearbyMobs(p, 32));
-        o.add("projectiles", nearbyProjectiles(p, 32));
+        // チャットコマンド等で設定した searchDistance を動的に使用
+        o.add("mobs", nearbyMobs(p, searchDistance));
+        o.add("projectiles", nearbyProjectiles(p, searchDistance));
         
         o.add("nearby", nearbyBlocks(p));
         return o;
@@ -291,7 +319,6 @@ public final class MineAgentClient {
             float yaw = (float)(o.has("yaw") ? o.get("yaw").getAsDouble() : (p == null ? 0 : p.getYRot()));
             float pitch = (float)(o.has("pitch") ? o.get("pitch").getAsDouble() : (p == null ? 0 : p.getXRot()));
             
-            // ★修正点：hotbarSlot パラメータの取得を追加
             Integer hotbarSlot = o.has("hotbarSlot") && !o.get("hotbarSlot").isJsonNull() ? o.get("hotbarSlot").getAsInt() : null;
 
             control = new Control(
@@ -329,7 +356,6 @@ public final class MineAgentClient {
         }
     }
 
-    // ★修正点：Control レコードに Integer hotbarSlot を追加
     private record Control(double forward, double strafe, boolean jump, boolean sprint, boolean attack, boolean use, boolean eat, float yaw, float pitch, Integer targetId, Integer hotbarSlot){
         static Control empty(){
             return new Control(0, 0, false, false, false, false, false, Float.NaN, Float.NaN, null, null);
