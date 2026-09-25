@@ -29,7 +29,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.concurrent.Executors;
 
-@EventBusSubscriber(modid=MineAgent.MOD_ID, value=Dist.CLIENT, bus=EventBusSubscriber.Bus.GAME)
+@EventBusSubscriber(modid = MineAgent.MOD_ID, value = Dist.CLIENT)
 public final class MineAgentClient {
     private static final int PORT = 18765;
     private static volatile String mode = "off";
@@ -71,12 +71,12 @@ public final class MineAgentClient {
                     .executes(context -> {
                         double dist = DoubleArgumentType.getDouble(context, "n");
                         searchDistance = dist;
-                        context.getSource().sendFeedback(() -> Component.literal("§a[MineAgent] 探索範囲を " + dist + "m に変更しました。"));
+                        context.getSource().sendSystemMessage(Component.literal("§a[MineAgent] 探索範囲を " + dist + "m に変更しました。"));
                         return 1;
                     })
                 )
                 .executes(context -> {
-                    context.getSource().sendFeedback(() -> Component.literal("§e[MineAgent] 現在の探索範囲: " + searchDistance + "m"));
+                    context.getSource().sendSystemMessage(Component.literal("§e[MineAgent] 現在の探索範囲: " + searchDistance + "m"));
                     return 1;
                 })
         );
@@ -114,7 +114,7 @@ public final class MineAgentClient {
             selectFood(p);
         }
 
-        // 攻撃処理（mc.level 参照へ修正）
+        // 攻撃処理
         if(c.attack && attackCooldown <= 0 && c.targetId() != null && mc.level != null){
             Entity target = mc.level.getEntity(c.targetId());
             if(target instanceof LivingEntity le && le.isAlive() && mc.gameMode != null && p.distanceToSqr(le) < 16.0){
@@ -216,7 +216,6 @@ public final class MineAgentClient {
         o.addProperty("heldItem", BuiltInRegistries.ITEM.getKey(p.getMainHandItem().getItem()).toString());
         o.addProperty("attackStrength", p.getAttackStrengthScale(0.0F));
         
-        // チャットコマンド等で設定した searchDistance を動的に使用
         o.add("mobs", nearbyMobs(p, searchDistance));
         o.add("projectiles", nearbyProjectiles(p, searchDistance));
         
